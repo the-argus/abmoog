@@ -1,5 +1,5 @@
 {
-  description = "Abmoog game for GTMK game jam 2023";
+  description = "Example C game project, with zig as the build system";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs?ref=nixos-unstable";
@@ -20,40 +20,35 @@
     ];
   in
     flake-utils.lib.eachSystem supportedSystems (system: let
-      pkgs = import nixpkgs {
-        inherit system;
-        overlays = import ./build/nix/overlays.nix;
-      };
-    in {
-      packages = {
-        chipmunk = pkgs.chipmunk;
-        zig = pkgs.zig;
-        raylib = pkgs.raylib;
-        web-raylib = pkgs.web-raylib;
-        web-chipmunk = pkgs.web-chipmunk;
-        web-build = pkgs.callPackage ./build/nix/web-build {};
-      };
+      pkgs = import nixpkgs {inherit system;};
 
-      devShell =
-        pkgs.mkShell.override
+      emsdk = pkgs.linkFarm "emsdk" [
         {
-          # we only need a compiler because its needed for LSP to find headers
-          # otherwise this would be stdenvNoCC
-          stdenv = pkgs.clangStdenv;
+          path = "${pkgs.emscripten}/share/emscripten/cache/sysroot/include";
+          name = "include";
         }
+        {
+          path = "${pkgs.emscripten}/share/emscripten/cache/sysroot/bin";
+          name = "bin";
+        }
+        {
+          path = "${pkgs.emscripten}/bin";
+          name = "bin";
+        }
+      ];
+    in {
+      devShell =
+        pkgs.mkShell
         {
           packages =
             (with pkgs; [
-              python311
-              clang-tools
+              python311 # for running web builds
               gdb
               valgrind
-              # chipmunk
-              # raylib
               pkg-config
               libGL
-              self.packages.${system}.zig
               emsdk
+              zig_0_11
             ])
             ++ (with pkgs.xorg; [
               libX11
@@ -63,11 +58,9 @@
               libXi
             ]);
 
-            shellHook = ''
-              export EMSDK="${pkgs.emsdk}"
-              export CHIPMUNK="${pkgs.chipmunk}"
-              export RAYLIB="${pkgs.raylib}"
-            '';
+          shellHook = ''
+            export EMSDK="${emsdk}"
+          '';
         };
 
       formatter = pkgs.alejandra;
