@@ -8,12 +8,12 @@
             .hash = "12203a237a96a5f37713979a57a201b4ec93f8a56e571f8584cfeb72156e4ccc14fa",
         },
         .chipmunk2d = .{
-            .url = "https://github.com/the-argus/Chipmunk2D/archive/664da245e794165aeefe83249be44fc72ef80407.tar.gz",
-            .hash = "1220d0d8148f770e23035c6c5281c1d2ab43533dadabd61caf9984bcbd00b89426fe",
+            .url = "https://github.com/the-argus/Chipmunk2D/archive/783b43bdcde42e51a313dfcae5b7d4c6cf09d01e.tar.gz",
+            .hash = "1220546a43d155ff42dd2a0e8fc1584cf5159504b8b1475d2e23c6689dc9248b94e8",
         },
         .compile_commands = .{
-            .url = "https://github.com/the-argus/zig-compile-commands/archive/090f6ca767de238f7eae4e13f91ecc7a299153c4.tar.gz",
-            .hash = "1220ad678342c3191edebd10df1a883b7a71e245d4ee91da26b7cf6b30e4ee8fb78d",
+            .url = "https://github.com/the-argus/zig-compile-commands/archive/55da47d4e54ae37c0ccca57e261f6bebcb05a9db.tar.gz",
+            .hash = "1220d80e4f032b8d2100745c1943fbd527e7147c694a42feed9a9963af1181b52353",
         },
     }
 }
