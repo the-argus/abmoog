@@ -18,11 +18,16 @@ const Library = struct {
     remote_name: []const u8,
     // the name given to this library in its build.zig. usually in addStaticLibrary
     artifact_name: []const u8,
+    imported: ?*std.Build.Dependency,
+
+    fn artifact(self: @This()) *std.Build.CompileStep {
+        return self.imported.?.artifact(self.artifact_name);
+    }
 };
 
-const libraries = [_]Library{
-    .{ .remote_name = "raylib", .artifact_name = "raylib" },
-    .{ .remote_name = "chipmunk2d", .artifact_name = "chipmunk" },
+var libraries = [_]Library{
+    .{ .remote_name = "raylib", .artifact_name = "raylib", .imported = null },
+    .{ .remote_name = "chipmunk2d", .artifact_name = "chipmunk", .imported = null },
 };
 
 pub fn build(b: *std.Build) !void {
@@ -32,9 +37,8 @@ pub fn build(b: *std.Build) !void {
     // keep track of any targets we create
     var targets = std.ArrayList(*std.Build.CompileStep).init(b.allocator);
 
-    var imported_libraries: [libraries.len]?*std.Build.Dependency = undefined;
     for (libraries, 0..) |library, index| {
-        imported_libraries[index] = b.dependency(library.remote_name, .{
+        libraries[index].imported = b.dependency(library.remote_name, .{
             .target = target,
             .optimize = mode,
         });
@@ -117,8 +121,8 @@ pub fn build(b: *std.Build) !void {
             const emcc = b.addSystemCommand(command);
 
             // also statically link the remote libraries
-            for (imported_libraries, 0..) |library, index| {
-                emcc.addArtifactArg(library.?.artifact(libraries[index].artifact_name));
+            for (libraries) |library| {
+                emcc.addArtifactArg(library.artifact());
             }
             emcc.addArtifactArg(lib.?);
             emcc.step.dependOn(&lib.?.step);
@@ -186,8 +190,8 @@ pub fn build(b: *std.Build) !void {
     // make the targets depend on the lib compile steps
     for (&[_]?*std.Build.CompileStep{ exe, lib }) |mainstep| {
         if (mainstep) |step| {
-            for (imported_libraries, 0..) |library, index| {
-                step.linkLibrary(library.?.artifact(libraries[index].artifact_name));
+            for (libraries) |library| {
+                step.linkLibrary(library.artifact());
             }
         }
     }
