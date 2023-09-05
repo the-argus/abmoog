@@ -9,6 +9,8 @@ var chosen_flags: ?[]const []const u8 = null;
 
 const zcc = @import("compile_commands");
 
+const emcc_executable = "emcc";
+
 const c_sources = [_][]const u8{
     "src/main.c",
 };
@@ -96,7 +98,7 @@ pub fn build(b: *std.Build) !void {
 
             const lib_output_include_flag = try includePrefixFlag(b.allocator, b.install_prefix);
             const shell_file = try std.fs.path.join(b.allocator, &.{ emscriptenSrc, "minshell.html" });
-            const emcc_path = try std.fs.path.join(b.allocator, &.{ b.sysroot.?, "bin", "emcc" });
+            const emcc_path = try std.fs.path.join(b.allocator, &.{ b.sysroot.?, "bin", emcc_executable });
 
             const command = &[_][]const u8{
                 emcc_path,

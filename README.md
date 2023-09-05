@@ -7,8 +7,7 @@ A flexible C game project template. This project:
 - Includes drawing, asset loading, 2D physics, and vector/matrix math.
 - Uses Zig as the build system, making it easy to use C++ or Zig in place of C.
 - Generates `compile_commands.json`
-- Includes a Nix environment, making it very easy to set up on Mac or Linux
-  (provided you're okay with installing Nix).
+- Includes a nix flake environment, making it very easy to set up on Mac or Linux
 
 This project does not create any abstraction over raylib and chipmunk, it simply
 includes them in the build. This means you will have to deal with the fact that
@@ -36,67 +35,98 @@ example to get an idea of what the API is like.
   JIT compiler. Unfortunately this JIT only works on Mac/Linux. Might consider
   another JIT for windows support.
 
-## Removing Features You Don't Need
+## Setup
 
-If you don't use Nix, then `rm -rf nix flake.nix flake.lock .envrc`.
+All platforms can perform native and cross-compiled builds in the same way, with
+the exception of web builds, which require additional setup. See the [Nix](#nix)
+section if you have nix installed and want to avoid this manual way of doing
+things. Otherwise:
 
-If your editor does not use editorconfig or clang-format, remove those dotfiles.
+To build this project on your machine, first clone the repository with your
+favorite git client. Then, head to [https://ziglang.org/download/](https://ziglang.org/download/)
+to find a list of zig downloads. Scroll down to the section marked `0.11.0`.
+Download the correct 0.11.0 binary for your OS and CPU architecture. Untar (or,
+in the case of windows, unzip) the file in your downloads folder. You should end
+up with a folder with a `zig.exe` or `zig` executable. Now, if you want to
+execute zig commands, you would have to type the full path to this executable.
+If you want to avoid this (believe me, you do) then look up how to add a folder
+to PATH for your OS. Here are the first articles I found when looking it up:
 
-If you don't plan on building for web, `rm -rf emscripten` and delete the
-contents of the `.wasi, .emscripten => {` case in the `build.zig.
+- [Windows](https://helpdeskgeek.com/windows-10/add-windows-path-environment-variable/)
+- [Linux](https://www.howtogeek.com/658904/how-to-add-a-directory-to-your-path-in-linux/)
+- [MacOS](https://techpp.com/2021/09/08/set-path-variable-in-macos-guide/)
 
-## Usage
+Once you have done this, you can open a terminal or cmd.exe, `cd` to the folder
+with your project, and run `zig build run`. The project should build and a window
+with a red rotating square should appear.
 
-How to install and use this template on different platforms with different tools.
+## VSCode
 
-On all platforms, building for desktop is the same: `zig build`. Installing zig
-and adding it to your PATH is not covered here.
+In order to set up vscode, install the `clangd` extension. This may conflict with
+Microsoft's C/C++ intellisense, in which case just disable the Microsoft one.
+Then, open a terminal (if you have the folder open you can right click on it
+and select "Open Integrated Terminal" from the pop-up) and run `zig build cdb`.
+This will create a file called `compile_commands.json`, which clangd will read
+and use to provide intellisense. If you add or move files in your project, or
+add new libraries, you will need to run `zig build cdb` again to update intellisense.
 
-Add the `-Doptimize=Debug` flag for a debug build.
+## Adding and moving source files
 
-### Windows
+If you want to rename, move, or add a new source file, you will need to edit the
+build.zig file. Inside there is an array of strings called `c_sources`. Make sure
+that all the files you want to be compiled in your project are listed there,
+surrounded by double quotes and separated by commas.
 
-This is the platform for which the process is the most complex.
+If you are using clangd and compile_commands.json, you must also re-run
+`zig build cdb` to get updated intellisense.
 
-Install raylib and chipmunk into a systemwide install location. In order to
-perform a web build from windows, you need to build both chipmunk and raylib
-using emscripten. Install the resulting static libraries somewhere, and then
-provide the path to the install prefixes with `-Draylib-prefix=/path/to/raylib`
-and `-Dchipmunk-prefix=/path/to/chipmunk`. You will also need to install the
-emscripten SDK and pass its location to the build command.
+## Building for Web
 
-Here is an example build command:
+You will need to install the emscripten SDK first and foremost. After that, you
+just need to provide its location to zig with the zig build flag ``--sysroot``.
+Here is the typical build command for web, on a machine using a POSIX shell:
 
 ```bash
-zig build -Doptimize=ReleaseSmall \
-    -Dtarget=wasm32-wasi \
-    --sysroot "$EMSDK/upstream/sysroot" \
-    -Dchipmunk-prefix="C:\Program Files\Chipmunk 7.0.3" \
-    -Draylib-prefix"C:\raylib" \
+zig build \
+    -Doptimize=ReleaseSmall \
+    -Dtarget=wasm32-emscripten \
+    --sysroot "$EMSDK" \
+    --verbose-cc
 ```
 
-Notice the `wasm32-wasi` platform.
+Notice the `wasm32-emscripten` platform. Also, the `$EMSDK` is a variable which
+resolves to the path to the SDK. You can just manually copy and paste the path
+instead, for simplicity.
 
-### Linux
+## Using C++ instead of C
 
-Install [Nix](https://nixos.org/). `cd` to this directory and type `nix develop`
-to enter the development environment. From there you could launch `vim` or `code`
-or another editor. For automatic environment entry and some helpful aliases,
-install `nix-direnv-flakes` from nixpkgs, add the shell hook to your shell RC
-file, and run `direnv allow` in this directory.
+To use C++, you will need to perform some edits to the build.zig. Find the
+following line:
 
-To make a web build, run `nix build .#web-build` (or just `web` if you have
-direnv).
+```zig
+t.linkLibC();
+```
 
-Other direnv aliases:
+and add, directly after it:
 
-- `build` to build the program.
-- `run` to run it.
-- `debug` to run it with GDB. Requires putting "r" into the GDB prompt afterwards.
+```zig
+t.linkLibCpp();
+```
 
-### MacOS
+After doing this, you can simply rename `main.c` to `main.cpp` and start using
+c++ features.
 
-Untested, but in theory the linux instructions should work.
+Additionally, if you want to do web builds in the future, you will need to replace
+the `emcc_executable` variable (which is currently `"emcc"`) with `"em++"`.
+
+## Nix
+
+If you don't know what the flake.nix file is, go ahead and delete flake.nix,
+flake.lock, and .envrc.
+
+If you do know what they are, then great. Now install nix and direnv-flakes and
+run `direnv allow` in the project directory. Nix will automatically download and
+install zig, gdb, valgrind, etc.
 
 ## Credits
 
