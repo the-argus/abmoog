@@ -7,7 +7,6 @@
   };
 
   outputs = {
-    self,
     nixpkgs,
     flake-utils,
     ...
@@ -21,21 +20,6 @@
   in
     flake-utils.lib.eachSystem supportedSystems (system: let
       pkgs = import nixpkgs {inherit system;};
-
-      emsdk = pkgs.linkFarm "emsdk" [
-        {
-          path = "${pkgs.emscripten}/share/emscripten/cache/sysroot/include";
-          name = "include";
-        }
-        {
-          path = "${pkgs.emscripten}/share/emscripten/cache/sysroot/bin";
-          name = "bin";
-        }
-        {
-          path = "${pkgs.emscripten}/bin";
-          name = "bin";
-        }
-      ];
     in {
       devShell =
         pkgs.mkShell
@@ -47,7 +31,6 @@
               valgrind
               pkg-config
               libGL
-              emsdk
               zig_0_11
             ])
             ++ (with pkgs.xorg; [
@@ -57,10 +40,6 @@
               libXcursor
               libXi
             ]);
-
-          shellHook = ''
-            export EMSDK="${emsdk}"
-          '';
         };
 
       formatter = pkgs.alejandra;

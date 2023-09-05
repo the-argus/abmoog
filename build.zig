@@ -49,6 +49,33 @@ pub fn build(b: *std.Build) !void {
     // emscripten library
     var lib: ?*std.Build.CompileStep = null;
 
+    // initialize either lib or exe
+    switch (target.getOsTag()) {
+        .wasi, .emscripten => {
+            lib = b.addStaticLibrary(.{
+                .name = app_name,
+                .optimize = mode,
+                .target = target,
+            });
+            try targets.append(lib.?);
+        },
+        else => {
+            exe = b.addExecutable(.{
+                .name = app_name,
+                .optimize = mode,
+                .target = target,
+            });
+            try targets.append(exe.?);
+        },
+    }
+
+    // make the targets depend on the libraries compile steps
+    for (targets.items) |step| {
+        for (libraries) |library| {
+            step.linkLibrary(library.artifact());
+        }
+    }
+
     switch (target.getOsTag()) {
         .wasi, .emscripten => {
             const emscriptenSrc = "build/emscripten/";
@@ -59,13 +86,6 @@ pub fn build(b: *std.Build) !void {
                 std.log.err("\n\nUSAGE: Pass the '--sysroot \"$EMSDK/upstream/emscripten\"' flag.\n\n", .{});
                 return;
             }
-
-            lib = b.addStaticLibrary(.{
-                .name = app_name,
-                .optimize = mode,
-                .target = target,
-            });
-            try targets.append(lib.?);
 
             const emscripten_include_flag = try includePrefixFlag(b.allocator, b.sysroot.?);
 
@@ -122,8 +142,15 @@ pub fn build(b: *std.Build) !void {
 
             // also statically link the remote libraries
             for (libraries) |library| {
+                // link to it
                 emcc.addArtifactArg(library.artifact());
             }
+            // also include it
+            for (zcc.extractIncludeDirsFromCompileStep(b, lib.?)) |include_dir| {
+                emcc.addArg(includeFlag(b.allocator, include_dir));
+            }
+
+            // add all the accumulated stuff to the command
             emcc.addArtifactArg(lib.?);
             emcc.step.dependOn(&lib.?.step);
 
@@ -146,13 +173,6 @@ pub fn build(b: *std.Build) !void {
             );
         },
         else => {
-            exe = b.addExecutable(.{
-                .name = app_name,
-                .optimize = mode,
-                .target = target,
-            });
-            try targets.append(exe.?);
-
             chosen_flags = if (mode == .Debug) &debug_flags else &release_flags;
 
             exe.?.addCSourceFiles(&c_sources, chosen_flags.?);
@@ -187,15 +207,6 @@ pub fn build(b: *std.Build) !void {
         },
     }
 
-    // make the targets depend on the lib compile steps
-    for (&[_]?*std.Build.CompileStep{ exe, lib }) |mainstep| {
-        if (mainstep) |step| {
-            for (libraries) |library| {
-                step.linkLibrary(library.artifact());
-            }
-        }
-    }
-
     for (targets.items) |t| {
         b.installArtifact(t);
     }
@@ -205,6 +216,10 @@ pub fn build(b: *std.Build) !void {
 
 fn includePrefixFlag(ally: std.mem.Allocator, path: []const u8) ![]const u8 {
     return try std.fmt.allocPrint(ally, "-I{s}/include", .{path});
+}
+
+fn includeFlag(ally: std.mem.Allocator, path: []const u8) []const u8 {
+    return std.fmt.allocPrint(ally, "-I{s}", .{path}) catch @panic("OOM");
 }
 
 fn include(
