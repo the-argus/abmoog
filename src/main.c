@@ -1,9 +1,10 @@
-#include <chipmunk/chipmunk.h>
+//#include <chipmunk/chipmunk.h>
 #ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
 #endif
 #include <raylib.h>
 #include <stdio.h>
+#include <math.h>
 
 void update();
 void init();

@@ -29,7 +29,7 @@ const Library = struct {
 
 var libraries = [_]Library{
     .{ .remote_name = "raylib", .artifact_name = "raylib", .imported = null },
-    .{ .remote_name = "chipmunk2d", .artifact_name = "chipmunk", .imported = null },
+    //.{ .remote_name = "chipmunk2d", .artifact_name = "chipmunk", .imported = null },
 };
 
 pub fn build(b: *std.Build) !void {
@@ -213,6 +213,15 @@ pub fn build(b: *std.Build) !void {
         b.installArtifact(t);
     }
 
+    // windows requires that no targets use pkg-config. of course.
+    // because its a unix thing.
+    switch (target.getOsTag()) {
+        .windows => for (targets.items) |t| {
+            unsetPkgConfig(t);
+        },
+        else => {},
+    }
+
     zcc.createStep(b, "cdb", try targets.toOwnedSlice());
 }
 
@@ -239,5 +248,19 @@ fn link(
 ) !void {
     for (targets.items) |target| {
         target.linkSystemLibrary(lib);
+    }
+}
+
+// Recursively unset all link objects' use_pkg_config setting
+// fix for https://github.com/ziglang/zig/issues/14341
+fn unsetPkgConfig(compile: *std.Build.Step.Compile) void {
+    for (compile.link_objects.items) |*lo| {
+        switch (lo.*) {
+            .system_lib => |*system_lib| {
+                system_lib.use_pkg_config = .no;
+            },
+            .other_step => |child_compile| unsetPkgConfig(child_compile),
+            else => {},
+        }
     }
 }
