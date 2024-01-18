@@ -8,8 +8,8 @@
             .hash = "12203a237a96a5f37713979a57a201b4ec93f8a56e571f8584cfeb72156e4ccc14fa",
         },
         .chipmunk2d = .{
-            .url = "https://github.com/the-argus/Chipmunk2D/archive/783b43bdcde42e51a313dfcae5b7d4c6cf09d01e.tar.gz",
-            .hash = "1220546a43d155ff42dd2a0e8fc1584cf5159504b8b1475d2e23c6689dc9248b94e8",
+            .url = "https://github.com/the-argus/Chipmunk2D/archive/7acd99992e3b5923005adb5dc8ef0e8cf644a92a.tar.gz",
+            .hash = "122067d624e29586e1826294138f7c4a7de84793b0e6d6f3b90100169cbfbfff8bb3",
         },
         .compile_commands = .{
             .url = "https://github.com/the-argus/zig-compile-commands/archive/2b1e6b25716704fdaf8a46c94ac6a8a7ab4d3fba.tar.gz",
