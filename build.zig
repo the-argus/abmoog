@@ -29,7 +29,7 @@ const Library = struct {
 
 var libraries = [_]Library{
     .{ .remote_name = "raylib", .artifact_name = "raylib", .imported = null },
-    //.{ .remote_name = "chipmunk2d", .artifact_name = "chipmunk", .imported = null },
+    .{ .remote_name = "chipmunk2d", .artifact_name = "chipmunk", .imported = null },
 };
 
 pub fn build(b: *std.Build) !void {

@@ -1,4 +1,4 @@
-//#include <chipmunk/chipmunk.h>
+#include <chipmunk/chipmunk.h>
 #ifdef __EMSCRIPTEN__
 #include <emscripten/emscripten.h>
 #endif
@@ -35,6 +35,8 @@ void init()
 	SetConfigFlags(FLAG_MSAA_4X_HINT);
 	InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Raylib/Chipmunk Example Project");
 	SetTargetFPS(60);
+    cpSpace* space = cpSpaceNew();
+    cpSpaceInit(space);
 }
 
 void update()
